@@ -16,8 +16,40 @@ allprojects {
     repositories {
         jcenter()
     }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+//noinspection GroovyAssignabilityCheck
+task makeUnityPlugin(dependsOn: ':authservice:build') << {
+    println 'Building Unity plugin'
+
+    copy {
+        from('authservice/build/outputs/aar') {
+            include 'authservice-release.aar'
+        }
+        into 'Assets/Plugins/Amazon/libs'
+    }
+
+    copy {
+        from('authservice/') {
+            include 'project.properties'
+        }
+        into 'Assets/Plugins/Amazon'
+    }
+
+    copy {
+        from('authservice/src/main') {
+            include 'AndroidManifest.xml'
+        }
+        into 'Assets/Plugins/Amazon'
+    }
+
+    println 'Done'
 }
