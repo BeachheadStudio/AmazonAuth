@@ -34,21 +34,21 @@ task makeUnityPlugin(dependsOn: ':authservice:build') << {
         from('authservice/build/outputs/aar') {
             include 'authservice-release.aar'
         }
-        into 'Assets/Plugins/Amazon/libs'
+        into 'Assets/Plugins/Android/Amazon/libs'
     }
 
     copy {
         from('authservice/') {
             include 'project.properties'
         }
-        into 'Assets/Plugins/Amazon'
+        into 'Assets/Plugins/Android/Amazon'
     }
 
     copy {
         from('authservice/src/main') {
             include 'AndroidManifest.xml'
         }
-        into 'Assets/Plugins/Amazon'
+        into 'Assets/Plugins/Android/Amazon'
     }
 
     println 'Done'
