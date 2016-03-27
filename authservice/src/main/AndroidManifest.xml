@@ -8,16 +8,34 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name="com.amazon.identity.auth.device.authorization.AuthorizationActivity" android:theme="@android:style/Theme.NoDisplay" android:allowTaskReparenting="true" android:launchMode="singleTask">
+        <!-- GameCircle Dependencies -->
+        <activity android:name="com.amazon.ags.html5.overlay.GameCircleUserInterface"
+            android:theme="@android:style/Theme.NoDisplay" android:hardwareAccelerated="false" />
+
+        <activity
+            android:name="com.amazon.identity.auth.device.authorization.AuthorizationActivity"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:allowTaskReparenting="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- android:host must use the full package name
-                    found in Manifest General Attributes -->
                 <data android:host="BUNDLE_ID" android:scheme="amzn" />
             </intent-filter>
         </activity>
+        <activity android:name="com.amazon.ags.html5.overlay.GameCircleAlertUserInterface"
+            android:theme="@android:style/Theme.NoDisplay" android:hardwareAccelerated="false" />
+        <receiver
+            android:name="com.amazon.identity.auth.device.authorization.PackageIntentReceiver"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_INSTALL" />
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+        <!-- End GameCircle Dependencies -->
 
     </application>
 
