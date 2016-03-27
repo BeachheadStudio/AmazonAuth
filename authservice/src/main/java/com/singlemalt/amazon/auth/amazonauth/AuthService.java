@@ -83,13 +83,12 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     private Player player;
     private String playerId = null;
     private String oauthToken = "";
+    private String failureError;
     private boolean anonymous = true;
 
-    private AuthService() {
+    private AuthService() { }
 
-    }
-
-    public void Init(boolean achievements, boolean leaderboards, boolean whisperSync) {
+    public void init(boolean achievements, boolean leaderboards, boolean whisperSync) {
         Log.d(TAG, "Starting");
 
         this.loginStatus = STATUS_VALUES[0];
@@ -118,6 +117,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, "onCancel");
 
         loginStatus = STATUS_VALUES[3];
+
         checkStatus();
     }
 
@@ -136,6 +136,8 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, String.format("onError %s", authError.toString()));
 
         loginStatus = STATUS_VALUES[2];
+        failureError = authError.getMessage();
+
         checkStatus();
     }
 
@@ -154,6 +156,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     @Override
     public void onServiceNotReady(AmazonGamesStatus amazonGamesStatus) {
         gcStatus = STATUS_VALUES[2];
+        failureError = amazonGamesStatus.name();
         checkStatus();
     }
 
@@ -208,6 +211,10 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     public String getOauthToken() {
         return oauthToken;
+    }
+
+    public String getFailureError() {
+        return failureError;
     }
 
     private void checkStatus() {
