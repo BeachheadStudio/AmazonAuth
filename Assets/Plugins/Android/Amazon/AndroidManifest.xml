@@ -15,7 +15,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!-- android:host must use the full package name
                     found in Manifest General Attributes -->
-                <data android:host="com.example.appid" android:scheme="amzn" />
+                <data android:host="BUNDLE_ID" android:scheme="amzn" />
             </intent-filter>
         </activity>
 

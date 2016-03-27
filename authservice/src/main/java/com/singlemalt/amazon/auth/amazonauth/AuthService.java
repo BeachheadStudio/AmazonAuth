@@ -15,9 +15,10 @@ import com.singlemalt.amazon.auth.amazonauth.listeners.LoginListener;
 import com.singlemalt.amazon.auth.amazonauth.listeners.TokenListener;
 
 import android.app.Activity;
-import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+
+import com.unity3d.player.UnityPlayer;
 
 import java.util.EnumSet;
 
@@ -53,16 +54,23 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             LoginListener loginListener = new LoginListener(authService, tokenListener, manager);
 
             Log.d(TAG, "Starting");
-            manager = new AmazonAuthorizationManager(context, Bundle.EMPTY);
+            manager = new AmazonAuthorizationManager(UnityPlayer.currentActivity.getApplicationContext(), Bundle.EMPTY);
             manager.authorize(APP_AUTH_SCOPES, Bundle.EMPTY, loginListener);
 
             AmazonGamesClient.initialize(activity, authService, features);
         }
     }
 
-    // android references
-    private Context context;
-    private Activity activity;
+    // singleton methods
+    private static AuthService instance;
+
+    public static AuthService getInstance() {
+        if(instance == null) {
+            instance = new AuthService();
+        }
+
+        return instance;
+    }
 
     // game circle client
     private AmazonGamesClient agClient;
@@ -71,18 +79,21 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     private String loginStatus;
     private String gcStatus;
 
+    // Amazon parameters
     private EnumSet<AmazonGamesFeature> features;
     private Player player;
-    private String playerId = "";
+    private String playerId = null;
     private String oauthToken = "";
     private boolean anonymous = true;
+    private boolean newPlayer = false;
 
-    public AuthService(Context context, Activity activity, boolean achievements, boolean leaderboards,
-                       boolean whisperSync) {
+    private AuthService() {
+
+    }
+
+    public void Init(boolean achievements, boolean leaderboards, boolean whisperSync) {
         Log.d(TAG, "Starting");
 
-        this.context = context;
-        this.activity = activity;
         this.loginStatus = STATUS_VALUES[0];
         this.gcStatus = STATUS_VALUES[0];
 
@@ -101,7 +112,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             features.add(AmazonGamesFeature.Whispersync);
         }
 
-        new Thread(new AuthRunner(this, activity, features)).start();
+        new Thread(new AuthRunner(this, UnityPlayer.currentActivity, features)).start();
     }
 
     @Override
@@ -109,6 +120,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, "onCancel");
 
         loginStatus = STATUS_VALUES[3];
+        checkStatus();
     }
 
     @Override
@@ -116,10 +128,9 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, "onSuccess");
 
         loginStatus = STATUS_VALUES[1];
+        oauthToken = bundle.getString(AuthzConstants.BUNDLE_KEY.TOKEN.val);
 
-        if(bundle.getString(AuthzConstants.BUNDLE_KEY.TOKEN.val) != null) {
-            oauthToken = bundle.getString(AuthzConstants.BUNDLE_KEY.TOKEN.val);
-        }
+        checkStatus();
     }
 
     @Override
@@ -127,6 +138,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, String.format("onError %s", authError.toString()));
 
         loginStatus = STATUS_VALUES[2];
+        checkStatus();
     }
 
     @Override
@@ -135,27 +147,28 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
         if(agClient.getPlayerClient().isSignedIn()) {
             agClient.getPlayerClient().getLocalPlayer((Object[]) null).setCallback(this);
+        } else {
+            gcStatus = STATUS_VALUES[3];
+            checkStatus();
         }
     }
 
     @Override
     public void onServiceNotReady(AmazonGamesStatus amazonGamesStatus) {
-        anonymous = true;
-        player = null;
         gcStatus = STATUS_VALUES[2];
+        checkStatus();
     }
 
     @Override
     public void onComplete(RequestPlayerResponse requestPlayerResponse) {
         if(requestPlayerResponse.isError()) {
-            anonymous = true;
-            player = null;
             gcStatus = STATUS_VALUES[2];
         } else {
-            anonymous = false;
             player = requestPlayerResponse.getPlayer();
             gcStatus = STATUS_VALUES[1];
         }
+
+        checkStatus();
     }
 
     public void onPause() {
@@ -169,15 +182,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             agClient = null;
         }
 
-        AmazonGamesClient.initialize(activity, this, features);
-    }
-
-    public String getLoginStatus() {
-        return loginStatus;
-    }
-
-    public String getGcStatus() {
-        return gcStatus;
+        AmazonGamesClient.initialize(UnityPlayer.currentActivity, this, features);
     }
 
     public String getPlayerName() {
@@ -189,7 +194,14 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     }
 
     public void setPlayerId(String playerId) {
-        this.playerId = playerId;
+        if(this.playerId != null) {
+            if(!this.playerId.equals(playerId)) {
+                this.playerId = playerId;
+                UnityPlayer.UnitySendMessage("Main Camera", "PlayerChange", "true");
+            }
+        } else {
+            this.playerId = playerId;
+        }
     }
 
     public String getPlayerId() {
@@ -199,4 +211,28 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public String getOauthToken() {
         return oauthToken;
     }
+
+    private void checkStatus() {
+        if(loginStatus.equals(STATUS_VALUES[0]) || gcStatus.equals(STATUS_VALUES[0])) {
+            // not ready to update unity
+            return;
+        }
+
+        if(loginStatus.equals(STATUS_VALUES[1]) && gcStatus.equals(STATUS_VALUES[1])) {
+            anonymous = false;
+
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[1]);
+        } else if(loginStatus.equals(STATUS_VALUES[3])) {
+            anonymous = true;
+            player = null;
+
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[3]);
+        } else if(loginStatus.equals(STATUS_VALUES[2]) || gcStatus.equals(STATUS_VALUES[2])) {
+            anonymous = true;
+            player = null;
+
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[2]);
+        }
+    }
+
 }

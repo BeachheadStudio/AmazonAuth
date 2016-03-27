@@ -25,4 +25,5 @@ dependencies {
     compile files('libs/gamecirclesdk.jar')
     compile files('libs/login-with-amazon-sdk.jar')
     compile files('libs/AmazonInsights-android-sdk.jar')
+    compile files('libs/classes.jar')
 }
