@@ -39,12 +39,10 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         private final String TAG = AuthRunner.class.getSimpleName();
         private AmazonAuthorizationManager manager;
         private AuthService authService;
-        private Activity activity;
         private EnumSet<AmazonGamesFeature> features;
 
-        public AuthRunner(AuthService authService, Activity activity, EnumSet<AmazonGamesFeature> features) {
+        public AuthRunner(AuthService authService, EnumSet<AmazonGamesFeature> features) {
             this.authService = authService;
-            this.activity = activity;
             this.features = features;
         }
 
@@ -54,10 +52,11 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             LoginListener loginListener = new LoginListener(authService, tokenListener, manager);
 
             Log.d(TAG, "Starting");
-            manager = new AmazonAuthorizationManager(UnityPlayer.currentActivity.getApplicationContext(), Bundle.EMPTY);
+            manager = new AmazonAuthorizationManager(
+                    UnityPlayer.currentActivity.getApplicationContext(), Bundle.EMPTY);
             manager.authorize(APP_AUTH_SCOPES, Bundle.EMPTY, loginListener);
 
-            AmazonGamesClient.initialize(activity, authService, features);
+            AmazonGamesClient.initialize(UnityPlayer.currentActivity, authService, features);
         }
     }
 
@@ -85,7 +84,6 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     private String playerId = null;
     private String oauthToken = "";
     private boolean anonymous = true;
-    private boolean newPlayer = false;
 
     private AuthService() {
 
@@ -112,7 +110,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             features.add(AmazonGamesFeature.Whispersync);
         }
 
-        new Thread(new AuthRunner(this, UnityPlayer.currentActivity, features)).start();
+        new Thread(new AuthRunner(this, features)).start();
     }
 
     @Override
