@@ -125,7 +125,6 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         }
 
         Executors.newSingleThreadExecutor().execute(new AuthRunner(this));
-        Executors.newSingleThreadExecutor().execute(new GCRunner(this));
     }
 
     @Override
@@ -199,14 +198,14 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         Log.d(TAG, "onPause");
 
         if(agClient != null) {
-            //agClient.release();
+            agClient.release();
         }
     }
 
     public void onResume() {
         Log.d(TAG, "onResume");
 
-        AmazonGamesClient.initialize(UnityPlayer.currentActivity, this, features);
+        Executors.newSingleThreadExecutor().execute(new GCRunner(this));
     }
 
     public String getPlayerName() {
