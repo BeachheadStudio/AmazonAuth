@@ -21,6 +21,8 @@ import android.util.Log;
 import com.unity3d.player.UnityPlayer;
 
 import java.util.EnumSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by kmiller on 3/25/16.
@@ -39,23 +41,34 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         private final String TAG = AuthRunner.class.getSimpleName();
         private AmazonAuthorizationManager manager;
         private AuthService authService;
-        private EnumSet<AmazonGamesFeature> features;
 
-        public AuthRunner(AuthService authService, EnumSet<AmazonGamesFeature> features) {
+        public AuthRunner(AuthService authService) {
             this.authService = authService;
-            this.features = features;
         }
 
         @Override
         public void run() {
+            Log.d(TAG, "Starting Amazon login");
+            manager = new AmazonAuthorizationManager(
+                    UnityPlayer.currentActivity.getApplicationContext(), Bundle.EMPTY);
+
             TokenListener tokenListener = new TokenListener(authService);
             LoginListener loginListener = new LoginListener(authService, tokenListener, manager);
 
-            Log.d(TAG, "Starting");
-            manager = new AmazonAuthorizationManager(
-                    UnityPlayer.currentActivity.getApplicationContext(), Bundle.EMPTY);
             manager.authorize(APP_AUTH_SCOPES, Bundle.EMPTY, loginListener);
+        }
+    }
 
+    private class GCRunner implements Runnable {
+        private AuthService authService;
+
+        public GCRunner(AuthService authService) {
+            this.authService = authService;
+        }
+
+        @Override
+        public void run() {
+            Log.d(TAG, "Starting GameCircle login");
             AmazonGamesClient.initialize(UnityPlayer.currentActivity, authService, features);
         }
     }
@@ -109,12 +122,13 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             features.add(AmazonGamesFeature.Whispersync);
         }
 
-        new Thread(new AuthRunner(this, features)).start();
+        Executors.newSingleThreadExecutor().execute(new AuthRunner(this));
+        Executors.newSingleThreadExecutor().execute(new GCRunner(this));
     }
 
     @Override
     public void onCancel(Bundle bundle) {
-        Log.d(TAG, "onCancel");
+        Log.d(TAG, "login onCancel");
 
         loginStatus = STATUS_VALUES[3];
 
@@ -123,7 +137,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     @Override
     public void onSuccess(Bundle bundle) {
-        Log.d(TAG, "onSuccess");
+        Log.d(TAG, "login onSuccess");
 
         loginStatus = STATUS_VALUES[1];
         oauthToken = bundle.getString(AuthzConstants.BUNDLE_KEY.TOKEN.val);
@@ -133,7 +147,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     @Override
     public void onError(AuthError authError) {
-        Log.d(TAG, String.format("onError %s", authError.toString()));
+        Log.d(TAG, String.format("login onError %s", authError.toString()));
 
         loginStatus = STATUS_VALUES[2];
         failureError = authError.getMessage();
@@ -143,6 +157,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     @Override
     public void onServiceReady(AmazonGamesClient amazonGamesClient) {
+        Log.d(TAG, "gc onServiceReady");
         agClient = amazonGamesClient;
 
         if(agClient.getPlayerClient().isSignedIn()) {
@@ -151,10 +166,13 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             gcStatus = STATUS_VALUES[3];
             checkStatus();
         }
+        checkStatus();
     }
 
     @Override
     public void onServiceNotReady(AmazonGamesStatus amazonGamesStatus) {
+        Log.d(TAG, "gc onServiceNotReady: " + amazonGamesStatus.name());
+
         gcStatus = STATUS_VALUES[2];
         failureError = amazonGamesStatus.name();
         checkStatus();
@@ -162,9 +180,13 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     @Override
     public void onComplete(RequestPlayerResponse requestPlayerResponse) {
+        Log.d(TAG, "get player onComplete");
+
         if(requestPlayerResponse.isError()) {
+            Log.e(TAG, "get player error: " +requestPlayerResponse.getError().toString());
             gcStatus = STATUS_VALUES[2];
         } else {
+            Log.d(TAG, "get player success: " + requestPlayerResponse.getPlayer().getAlias());
             player = requestPlayerResponse.getPlayer();
             gcStatus = STATUS_VALUES[1];
         }
@@ -217,25 +239,34 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         return failureError;
     }
 
+    public boolean isAnonymous() {
+        return anonymous;
+    }
+
     private void checkStatus() {
+        Log.d(TAG, String.format("checkStatus: loginStatus %s, gcStatus %s", loginStatus, gcStatus));
+
         if(loginStatus.equals(STATUS_VALUES[0]) || gcStatus.equals(STATUS_VALUES[0])) {
-            // not ready to update unity
+            Log.d(TAG, "not ready to update unity");
             return;
         }
 
         if(loginStatus.equals(STATUS_VALUES[1]) && gcStatus.equals(STATUS_VALUES[1])) {
             anonymous = false;
 
+            Log.d(TAG, "login success");
             UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[1]);
         } else if(loginStatus.equals(STATUS_VALUES[3])) {
             anonymous = true;
             player = null;
 
+            Log.d(TAG, "login cancelled");
             UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[3]);
         } else if(loginStatus.equals(STATUS_VALUES[2]) || gcStatus.equals(STATUS_VALUES[2])) {
             anonymous = true;
             player = null;
 
+            Log.d(TAG, "login failed");
             UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[2]);
         }
     }
