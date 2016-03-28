@@ -11,10 +11,9 @@ import com.amazon.identity.auth.device.AuthError;
 import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
 import com.amazon.identity.auth.device.authorization.api.AuthorizationListener;
 import com.amazon.identity.auth.device.authorization.api.AuthzConstants;
-import com.singlemalt.amazon.auth.amazonauth.listeners.LoginListener;
-import com.singlemalt.amazon.auth.amazonauth.listeners.TokenListener;
+import com.singlemalt.amazon.auth.amazonauth.listener.LoginListener;
+import com.singlemalt.amazon.auth.amazonauth.listener.TokenListener;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -83,6 +82,9 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
         return instance;
     }
+
+    // executor pool
+    ExecutorService executorService = Executors.newCachedThreadPool();
 
     // game circle client
     private AmazonGamesClient agClient;
@@ -166,7 +168,6 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
             gcStatus = STATUS_VALUES[3];
             checkStatus();
         }
-        checkStatus();
     }
 
     @Override
@@ -195,15 +196,15 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     }
 
     public void onPause() {
+        Log.d(TAG, "onPause");
+
         if(agClient != null) {
-            agClient.release();
+            //agClient.release();
         }
     }
 
     public void onResume() {
-        if(agClient != null) {
-            agClient = null;
-        }
+        Log.d(TAG, "onResume");
 
         AmazonGamesClient.initialize(UnityPlayer.currentActivity, this, features);
     }

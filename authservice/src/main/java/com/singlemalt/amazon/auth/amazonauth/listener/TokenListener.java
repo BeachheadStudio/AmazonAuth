@@ -1,10 +1,10 @@
-package com.singlemalt.amazon.auth.amazonauth.listeners;
+package com.singlemalt.amazon.auth.amazonauth.listener;
 
 import android.os.Bundle;
 
 import com.amazon.identity.auth.device.AuthError;
-import com.amazon.identity.auth.device.authorization.api.AuthorizationListener;
 import com.amazon.identity.auth.device.shared.APIListener;
+import com.singlemalt.amazon.auth.amazonauth.AuthService;
 
 import android.util.Log;
 
@@ -14,12 +14,12 @@ import android.util.Log;
 public class TokenListener implements APIListener {
     private static final String TAG = TokenListener.class.getSimpleName();
 
-    private AuthorizationListener serviceListener;
+    private AuthService authService;
 
-    public TokenListener(AuthorizationListener serviceListener) {
+    public TokenListener(AuthService authService) {
         Log.d(TAG, "init");
 
-        this.serviceListener = serviceListener;
+        this.authService = authService;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class TokenListener implements APIListener {
         Log.d(TAG, "onSuccess");
 
         // call service onError
-        serviceListener.onSuccess(bundle);
+        authService.onSuccess(bundle);
     }
 
     @Override
@@ -35,6 +35,6 @@ public class TokenListener implements APIListener {
         Log.d(TAG, String.format("onError %s", authError.toString()));
 
         // call service onError
-        serviceListener.onError(authError);
+        authService.onError(authError);
     }
 }

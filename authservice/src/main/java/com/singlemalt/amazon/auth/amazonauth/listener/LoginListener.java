@@ -1,4 +1,4 @@
-package com.singlemalt.amazon.auth.amazonauth.listeners;
+package com.singlemalt.amazon.auth.amazonauth.listener;
 
 import android.os.Bundle;
 
