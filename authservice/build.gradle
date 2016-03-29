@@ -19,12 +19,9 @@ android {
 }
 
 dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.2.1'
-    compile files('libs/gamecirclesdk.jar')
-    compile files('libs/login-with-amazon-sdk.jar')
-    compile files('libs/AmazonInsights-android-sdk.jar')
-    compile files('libs/classes.jar')
 }
 
 // for aar build, whenever that starts working in Unity

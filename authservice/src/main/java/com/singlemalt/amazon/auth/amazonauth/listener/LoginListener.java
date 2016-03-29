@@ -7,6 +7,8 @@ import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationMana
 import com.amazon.identity.auth.device.authorization.api.AuthorizationListener;
 import com.amazon.identity.auth.device.authorization.api.AuthzConstants;
 import com.amazon.identity.auth.device.shared.APIListener;
+import com.amazon.insights.core.util.StringUtil;
+import com.google.gson.Gson;
 import com.singlemalt.amazon.auth.amazonauth.AuthService;
 
 import android.util.Log;
@@ -40,11 +42,18 @@ public class LoginListener implements AuthorizationListener {
 
     @Override
     public void onSuccess(Bundle bundle) {
-        Log.d(TAG, "onSuccess");
+        Log.d(TAG, "onSuccess"+ new Gson().toJson(bundle));
+        Bundle profileBundle = bundle.getBundle(AuthzConstants.BUNDLE_KEY.PROFILE.val);
+        String name = profileBundle != null ? profileBundle.getString(AuthzConstants.PROFILE_KEY.NAME.val) : null;
+        String email = profileBundle != null ? profileBundle.getString(AuthzConstants.PROFILE_KEY.EMAIL.val) : null;
+        String playerId = profileBundle != null ? profileBundle.getString(AuthzConstants.PROFILE_KEY.USER_ID.val) : null;
 
-        // set player id
-        if(bundle.getString(AuthzConstants.PROFILE_KEY.USER_ID.val) != null) {
-            authService.setPlayerId(bundle.getString(AuthzConstants.PROFILE_KEY.USER_ID.val));
+        // set playerId
+        if(StringUtil.isNullOrEmpty(playerId)) {
+            Log.e(TAG, "The playerId from Amazon is null! Name: "+name+" email: "+email);
+        } else {
+            Log.d(TAG, "setting playerId to: "+playerId);
+            authService.setPlayerId(playerId);
         }
 
         // call manager, start token process

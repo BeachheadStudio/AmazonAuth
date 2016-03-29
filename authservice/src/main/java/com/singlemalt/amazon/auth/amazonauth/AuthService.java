@@ -20,7 +20,6 @@ import android.util.Log;
 import com.unity3d.player.UnityPlayer;
 
 import java.util.EnumSet;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -31,7 +30,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     private static final String TAG = AuthService.class.getSimpleName();
 
-    private static final String[] STATUS_VALUES = new String[]
+    public static final String[] STATUS_VALUES = new String[]
             { "Working", "Success", "Failure", "Cancel"};
 
     public static final String[] APP_AUTH_SCOPES = new String[]{ "profile" };
@@ -82,9 +81,6 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
         return instance;
     }
-
-    // executor pool
-    ExecutorService executorService = Executors.newCachedThreadPool();
 
     // game circle client
     private AmazonGamesClient agClient;
