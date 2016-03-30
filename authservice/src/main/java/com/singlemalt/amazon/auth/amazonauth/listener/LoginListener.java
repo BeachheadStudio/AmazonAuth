@@ -8,7 +8,6 @@ import com.amazon.identity.auth.device.authorization.api.AuthorizationListener;
 import com.amazon.identity.auth.device.authorization.api.AuthzConstants;
 import com.amazon.identity.auth.device.shared.APIListener;
 import com.amazon.insights.core.util.StringUtil;
-import com.google.gson.Gson;
 import com.singlemalt.amazon.auth.amazonauth.AuthService;
 
 import android.util.Log;
@@ -42,7 +41,7 @@ public class LoginListener implements AuthorizationListener {
 
     @Override
     public void onSuccess(Bundle bundle) {
-        Log.d(TAG, "onSuccess"+ new Gson().toJson(bundle));
+        Log.d(TAG, "onSuccess");
         Bundle profileBundle = bundle.getBundle(AuthzConstants.BUNDLE_KEY.PROFILE.val);
         String name = profileBundle != null ? profileBundle.getString(AuthzConstants.PROFILE_KEY.NAME.val) : null;
         String email = profileBundle != null ? profileBundle.getString(AuthzConstants.PROFILE_KEY.EMAIL.val) : null;
