@@ -30,8 +30,12 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
     private static final String TAG = AuthService.class.getSimpleName();
 
-    public static final String[] STATUS_VALUES = new String[]
-            { "Working", "Success", "Failure", "Cancel"};
+    public enum Status {
+        Working,
+        Success,
+        Failure,
+        Cancel
+    }
 
     public static final String[] APP_AUTH_SCOPES = new String[]{ "profile" };
 
@@ -85,9 +89,8 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     // game circle client
     private AmazonGamesClient agClient;
 
-    // enums are a pain in the JNI, so using a string
-    private String loginStatus;
-    private String gcStatus;
+    private Status loginStatus;
+    private Status gcStatus;
 
     // Amazon parameters
     private EnumSet<AmazonGamesFeature> features;
@@ -102,8 +105,8 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public void init(boolean achievements, boolean leaderboards, boolean whisperSync) {
         Log.d(TAG, "Starting");
 
-        this.loginStatus = STATUS_VALUES[0];
-        this.gcStatus = STATUS_VALUES[0];
+        this.loginStatus = Status.Working;
+        this.gcStatus = Status.Working;
 
         // AmazonGamesClient
         features = EnumSet.noneOf(AmazonGamesFeature.class);
@@ -127,7 +130,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public void onCancel(Bundle bundle) {
         Log.d(TAG, "login onCancel");
 
-        loginStatus = STATUS_VALUES[3];
+        loginStatus = Status.Cancel;
 
         checkStatus();
     }
@@ -136,7 +139,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public void onSuccess(Bundle bundle) {
         Log.d(TAG, "login onSuccess");
 
-        loginStatus = STATUS_VALUES[1];
+        loginStatus = Status.Success;
         oauthToken = bundle.getString(AuthzConstants.BUNDLE_KEY.TOKEN.val);
 
         checkStatus();
@@ -146,7 +149,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public void onError(AuthError authError) {
         Log.d(TAG, String.format("login onError %s", authError.toString()));
 
-        loginStatus = STATUS_VALUES[2];
+        loginStatus = Status.Failure;
         failureError = authError.getMessage();
 
         checkStatus();
@@ -160,7 +163,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
         if(agClient.getPlayerClient().isSignedIn()) {
             agClient.getPlayerClient().getLocalPlayer((Object[]) null).setCallback(this);
         } else {
-            gcStatus = STATUS_VALUES[3];
+            gcStatus = Status.Cancel;
             checkStatus();
         }
     }
@@ -169,7 +172,7 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     public void onServiceNotReady(AmazonGamesStatus amazonGamesStatus) {
         Log.d(TAG, "gc onServiceNotReady: " + amazonGamesStatus.name());
 
-        gcStatus = STATUS_VALUES[2];
+        gcStatus = Status.Failure;
         failureError = amazonGamesStatus.name();
         checkStatus();
     }
@@ -180,11 +183,11 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
 
         if(requestPlayerResponse.isError()) {
             Log.e(TAG, "get player error: " +requestPlayerResponse.getError().toString());
-            gcStatus = STATUS_VALUES[2];
+            gcStatus = Status.Failure;
         } else {
             Log.d(TAG, "get player success: " + requestPlayerResponse.getPlayer().getAlias());
             player = requestPlayerResponse.getPlayer();
-            gcStatus = STATUS_VALUES[1];
+            gcStatus = Status.Success;
         }
 
         checkStatus();
@@ -242,28 +245,28 @@ public class AuthService implements AuthorizationListener, AmazonGamesCallback,
     private void checkStatus() {
         Log.d(TAG, String.format("checkStatus: loginStatus %s, gcStatus %s", loginStatus, gcStatus));
 
-        if(loginStatus.equals(STATUS_VALUES[0]) || gcStatus.equals(STATUS_VALUES[0])) {
+        if(loginStatus.equals(Status.Working) || gcStatus.equals(Status.Working)) {
             Log.d(TAG, "not ready to update unity");
             return;
         }
 
-        if(loginStatus.equals(STATUS_VALUES[1]) && gcStatus.equals(STATUS_VALUES[1])) {
+        if(loginStatus.equals(Status.Success) && gcStatus.equals(Status.Success)) {
             anonymous = false;
 
             Log.d(TAG, "login success");
-            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[1]);
-        } else if(loginStatus.equals(STATUS_VALUES[3])) {
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", Status.Success.toString());
+        } else if(loginStatus.equals(Status.Cancel)) {
             anonymous = true;
             player = null;
 
             Log.d(TAG, "login cancelled");
-            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[3]);
-        } else if(loginStatus.equals(STATUS_VALUES[2]) || gcStatus.equals(STATUS_VALUES[2])) {
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", Status.Cancel.toString());
+        } else if(loginStatus.equals(Status.Failure) || gcStatus.equals(Status.Failure)) {
             anonymous = true;
             player = null;
 
             Log.d(TAG, "login failed");
-            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", STATUS_VALUES[2]);
+            UnityPlayer.UnitySendMessage("Main Camera", "LoginResult", Status.Failure.toString());
         }
     }
 
