@@ -29,10 +29,6 @@ task clean(type: Delete) {
         include "**/*.jar"
     }
 
-    delete fileTree('authservice/build/outputs') {
-        include "**/*.jar"
-    }
-
     delete 'Assets/Plugins/Android/Amazon/AndroidManifest.xml'
     delete 'Assets/Plugins/Android/Amazon/project.properties'
 
@@ -45,6 +41,26 @@ task makeUnityPlugin(dependsOn: ':authservice:build') {
         println 'Building Unity plugin'
 
         copy {
+            from 'AmazonInsights-android-sdk/AmazonInsights-android-sdk.jar'
+            into 'Assets/Plugins/Android/Amazon/libs'
+        }
+
+        copy {
+            from 'gamecirclesdk/gamecirclesdk.jar'
+            into 'Assets/Plugins/Android/Amazon/libs'
+        }
+
+        copy {
+            from 'gson-2.6.2/gson-2.6.2.jar'
+            into 'Assets/Plugins/Android/Amazon/libs'
+        }
+
+        copy {
+            from 'login-with-amazon-sdk/login-with-amazon-sdk.jar'
+            into 'Assets/Plugins/Android/Amazon/libs'
+        }
+
+        copy {
             from('authservice/build/intermediates/bundles/release') {
                 include 'classes.jar'
                 rename 'classes.jar', 'amazonauth.jar'
@@ -53,11 +69,10 @@ task makeUnityPlugin(dependsOn: ':authservice:build') {
         }
 
         copy {
-            from('authservice/libs') {
-                include '*.jar'
-                exclude 'classes.jar'
+            from('authservice/src/main/res') {
+                include '**/*.*'
             }
-            into 'Assets/Plugins/Android/Amazon/libs'
+            into 'Assets/Plugins/Android/Amazon/res'
         }
 
         copy {

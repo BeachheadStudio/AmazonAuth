@@ -1,1 +1,1 @@
-include ':authservice'
+include ':authservice', ':AmazonInsights-android-sdk', ':gamecirclesdk', ':login-with-amazon-sdk', ':gson-2.6.2'
