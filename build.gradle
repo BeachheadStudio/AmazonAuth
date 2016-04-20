@@ -51,11 +51,6 @@ task makeUnityPlugin(dependsOn: ':authservice:build') {
         }
 
         copy {
-            from 'gson-2.6.2/gson-2.6.2.jar'
-            into 'Assets/Plugins/Android/Amazon/libs'
-        }
-
-        copy {
             from 'login-with-amazon-sdk/login-with-amazon-sdk.jar'
             into 'Assets/Plugins/Android/Amazon/libs'
         }

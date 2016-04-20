@@ -48,7 +48,7 @@ public class ServerAuthRunner implements Runnable {
 
         try {
             RequestPojo data = new RequestPojo(AuthInstance.getInstance().getPlayerId(),
-                    AuthInstance.getInstance().getServerPlayerId(), "GOOGLE",
+                    AuthInstance.getInstance().getServerPlayerId(), "AMAZON",
                     AuthInstance.getInstance().getPlayerName(),
                     AuthInstance.getInstance().getOauthToken());
             String postString = new Gson().toJson(data);
